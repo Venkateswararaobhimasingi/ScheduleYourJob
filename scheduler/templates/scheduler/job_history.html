@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Job Execution History</title>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4">Execution History for Job #{{ job.id }}</h1>
+
+        <a href="{% url 'dashboard' %}" class="bg-blue-500 text-white px-4 py-2 rounded mb-4 inline-block">Back to Dashboard</a>
+
+        {% if history %}
+        <table class="w-full border-collapse border border-gray-300 mt-4">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border p-2">Executed At</th>
+                    <th class="border p-2">Response Status</th>
+                    <th class="border p-2">Response Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in history %}
+                <tr class="text-center">
+                    <td class="border p-2">{{ entry.executed_at }}</td>
+                    <td class="border p-2">{{ entry.response_status }}</td>
+                    <td class="border p-2">{{ entry.response_body|truncatechars:100 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-gray-500 mt-4">No execution history found.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>

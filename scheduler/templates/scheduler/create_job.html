@@ -1,0 +1,237 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+       
+            function isLeapYear(year) {
+                return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+            }
+        
+            function updateDays() {
+                let monthSelect = document.getElementById("yearly-month");
+                let daySelect = document.getElementById("yearly-day");
+                let selectedMonth = parseInt(monthSelect.value, 10);
+                let currentYear = new Date().getFullYear();
+                
+                let daysInMonth = 31; // Default
+        
+                if (selectedMonth === 2) {
+                    daysInMonth = isLeapYear(currentYear) ? 29 : 28;
+                } else if ([4, 6, 9, 11].includes(selectedMonth)) {
+                    daysInMonth = 30;
+                }
+        
+                // Clear existing options
+                daySelect.innerHTML = "";
+        
+                // Add new options
+                for (let i = 1; i <= daysInMonth; i++) {
+                    let option = document.createElement("option");
+                    option.value = i;
+                    option.textContent = i;
+                    daySelect.appendChild(option);
+                }
+            }
+        
+            // Attach event listener to update days when the month changes
+            document.addEventListener("DOMContentLoaded", function () {
+                document.getElementById("yearly-month").addEventListener("change", updateDays);
+            });
+    
+        
+            function toggleCustomSchedule() {
+                let customOptions = document.getElementById("custom-options");
+                let cronField = document.getElementById("cron-expression");
+                let scheduleType = document.querySelector("input[name='schedule_type']:checked").value;
+        
+                if (scheduleType === "custom") {
+                    customOptions.style.display = "grid";
+                    customOptions.style.gridTemplateColumns = "repeat(auto-fit, minmax(200px, 1fr))";
+                    customOptions.style.gap = "16px";
+                    cronField.disabled = false;
+                } else {
+                    customOptions.style.display = "none";
+                    cronField.disabled = false;
+                    updatePresetCron(scheduleType);
+                }
+            }
+
+        function generateCronExpression() {
+            let daysOfMonth = Array.from(document.getElementById("days-of-month").selectedOptions).map(o => o.value).join(",") || "*";
+            let daysOfWeek = Array.from(document.getElementById("days-of-week").selectedOptions).map(o => o.value).join(",") || "*";
+            let months = Array.from(document.getElementById("months").selectedOptions).map(o => o.value).join(",") || "*";
+            let hours = Array.from(document.getElementById("hours").selectedOptions).map(o => o.value).join(",") || "*";
+            let minutes = Array.from(document.getElementById("minutes").selectedOptions).map(o => o.value).join(",") || "*";
+            
+            document.getElementById("cron-expression").value = `${minutes} ${hours} ${daysOfMonth} ${months} ${daysOfWeek}`;
+        }
+
+        function updatePresetCron(scheduleType) {
+            let cronField = document.getElementById("cron-expression");
+
+            if (scheduleType === "every_15") {
+                let interval = document.getElementById("interval_15").value;
+                cronField.value = `*/${interval} * * * *`; // Every X minutes
+            } else if (scheduleType === "daily") {
+                let hour = document.getElementById("daily-hour").value;
+                let minute = document.getElementById("daily-minute").value;
+                cronField.value = `${minute} ${hour} * * *`; // Every day at HH:MM
+            } else if (scheduleType === "monthly") {
+                let day = document.getElementById("monthly-day").value;
+                let mhour = document.getElementById("monthly-hour").value;
+                let mmin = document.getElementById("monthly-min").value;
+                cronField.value = `${mmin} ${mhour} ${day} * *`; // Every 1st of the month at 00:00
+            } else if (scheduleType === "yearly") {
+                let month = document.getElementById("yearly-month").value;
+                let day = document.getElementById("yearly-day").value;
+                let yhour = document.getElementById("yearly-hour").value;
+                let ymin = document.getElementById("yearly-min").value;
+                cronField.value = `${ymin} ${yhour} ${day} ${month} *`; // Every year on January 1st at 00:00
+               // cronField.value = `0 0 1 1 *`; // Every year on January 1st at 00:00
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 p-6">
+    
+    <div class="max-w-lg mx-auto bg-white p-6 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4">Create a Scheduled Job</h1>
+        <form method="POST" action="{% url 'create_job' %}">
+            {% csrf_token %}
+            <input type="url" name="url" placeholder="Enter URL" class="border p-2 w-full mb-2" required>
+            <select name="method" class="border p-2 w-full mb-2">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+            </select>
+            
+            <h2 class="text-lg font-semibold">Execution Schedule</h2>
+            <label>
+                <input type="radio" name="schedule_type" value="every_15" onclick="toggleCustomSchedule()"> Every 
+                <select id="interval_15" onchange="updatePresetCron('every_15')">
+                    {% for i in 1|rangelist:59 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select> minutes
+            </label><br>
+
+            <label>
+                <input type="radio" name="schedule_type" value="daily" onclick="toggleCustomSchedule()"> Every day at 
+                <select id="daily-hour" onchange="updatePresetCron('daily')">
+                    {% for i in 0|rangelist:23 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>:
+                <select id="daily-minute" onchange="updatePresetCron('daily')">
+                    {% for i in 0|rangelist:59 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>
+                <input type="radio" name="schedule_type" value="monthly" onclick="toggleCustomSchedule()"> Every
+                <select id="monthly-day" onchange="updatePresetCron('monthly')">
+                    {% for i in 1|rangelist:31 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select> of the month at 
+                <select id="monthly-hour" onchange="updatePresetCron('monthly')">
+                    {% for i in 0|rangelist:23 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>:
+                <select id="monthly-min" onchange="updatePresetCron('monthly')">
+                    {% for i in 0|rangelist:59 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>
+                <input type="radio" name="schedule_type" value="yearly" onclick="toggleCustomSchedule()"> Every year on 
+                <select id="yearly-month" onchange="updatePresetCron('yearly')">
+                    {% for num, month in ""|get_months %}
+                        <option value="{{ num }}">{{ month }}</option>
+                    {% endfor %}
+                </select>
+                <select id="yearly-day" onchange="updatePresetCron('yearly')">
+                    {% for i in 1|rangelist:31 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select> at 
+                <select id="yearly-hour" onchange="updatePresetCron('yearly')">
+                    {% for i in 0|rangelist:23 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>:
+                <select id="yearly-min" onchange="updatePresetCron('yearly')">
+                    {% for i in 0|rangelist:59 %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>
+                <input type="radio" name="schedule_type" value="custom" onclick="toggleCustomSchedule()"> Custom
+            </label>
+
+            <div id="custom-options" class="hidden grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block mb-1">Days of Month:</label>
+                    <select id="days-of-month" multiple class="border p-2 w-full" onchange="generateCronExpression()">
+                        {% for i in 1|rangelist:31 %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block mb-1">Days of Week:</label>
+                    <select id="days-of-week" multiple class="border p-2 w-full" onchange="generateCronExpression()">
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                        <option value="0">Sunday</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block mb-1">Months:</label>
+                    <select id="months" multiple class="border p-2 w-full" onchange="generateCronExpression()">
+                        {% for num, month in ""|get_months %}
+                            <option value="{{ num }}">{{ month }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block mb-1">Hours:</label>
+                    <select id="hours" multiple class="border p-2 w-full" onchange="generateCronExpression()">
+                        {% for i in 0|rangelist:23 %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block mb-1">Minutes:</label>
+                    <select id="minutes" multiple class="border p-2 w-full" onchange="generateCronExpression()">
+                        {% for i in 0|rangelist:59 %}
+                            <option value="{{ i }}">{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <input type="text" id="cron-expression" name="cron_expression" class="border p-2 w-full mb-2" readonly>
+
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Create Job</button>
+        </form>
+    </div>
+</body>
+</html>
