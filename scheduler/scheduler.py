@@ -14,6 +14,10 @@ def run_scheduled_jobs():
     for job in jobs:
         with transaction.atomic():  # Prevents duplicate execution
             job = ScheduledJob.objects.select_for_update().get(id=job.id)  # Lock job row
+            
+            # ✅ Check if the job has already been executed at this scheduled time
+            if JobExecutionHistory.objects.filter(job=job, executed_at__gte=job.next_run_at, executed_at__lt=current_time).exists():
+                continue  # Skip execution if already processed
 
             if not job.next_run_at:
                 cron = croniter(job.cron_expression, current_time)
@@ -21,10 +25,6 @@ def run_scheduled_jobs():
                 job.next_run_at = cron.get_next(datetime)
                 job.save()
                 continue
-
-            # ✅ Prevent executing the same job twice at the same timestamp
-            if JobExecutionHistory.objects.filter(job=job, executed_at=job.next_run_at).exists():
-                continue  # Skip execution if already logged in history
 
             if job.next_run_at <= current_time:
                 try:
@@ -35,6 +35,7 @@ def run_scheduled_jobs():
                     job.next_run_at = cron.get_next(datetime)
                     job.save()
 
+                    # ✅ Log execution, ensuring no duplicate
                     JobExecutionHistory.objects.create(
                         job=job,
                         executed_at=current_time,
