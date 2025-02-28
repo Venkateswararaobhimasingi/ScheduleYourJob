@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import ScheduledJob
 from django.contrib.auth.decorators import login_required
-
+import requests
 @login_required
 def dashboard(request):
     jobs = ScheduledJob.objects.all().order_by('-created_at') 
@@ -88,3 +88,9 @@ def custom_login(request):
 
     return render(request, "scheduler/login.html")
 
+def calls(job):
+    if job.method == "GET":
+        response = requests.get(job.url) 
+    else :
+        response = requests.post(job.url, data={})
+    return response

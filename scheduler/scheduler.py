@@ -5,6 +5,7 @@ from croniter import croniter
 from django.utils.timezone import now
 from django.db import transaction
 from .models import ScheduledJob, JobExecutionHistory
+from .views import calls
 import pytz
 
 def run_scheduled_jobs():
@@ -28,7 +29,7 @@ def run_scheduled_jobs():
 
             if job.next_run_at <= current_time:
                 try:
-                    response = requests.get(job.url) if job.method == "GET" else requests.post(job.url, data={})
+                    response=calls(job)
 
                     job.last_executed_at = current_time
                     cron = croniter(job.cron_expression, current_time)
