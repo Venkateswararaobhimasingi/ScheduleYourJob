@@ -22,6 +22,10 @@ def run_scheduled_jobs():
                 job.save()
                 continue
 
+            # ✅ Prevent executing the same job twice at the same timestamp
+            if JobExecutionHistory.objects.filter(job=job, executed_at=job.next_run_at).exists():
+                continue  # Skip execution if already logged in history
+
             if job.next_run_at <= current_time:
                 try:
                     response = requests.get(job.url) if job.method == "GET" else requests.post(job.url, data={})
