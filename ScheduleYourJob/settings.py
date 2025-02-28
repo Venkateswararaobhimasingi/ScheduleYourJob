@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure--m1it@73_ck+z$y5hd(*oj&=stq^!d7nqa7cxgf(408!$wciuu
 DEBUG = True
 
 #ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['environmental-arabel-venkateswararaobhimasingi-3a462b51.koyeb.app']
+ALLOWED_HOSTS = ['environmental-arabel-venkateswararaobhimasingi-3a462b51.koyeb.app','localhost']
 
 
 # Application definition
