@@ -4,6 +4,7 @@ from datetime import datetime
 from croniter import croniter
 from django.utils.timezone import now
 from .models import ScheduledJob,JobExecutionHistory
+from .views import calls
 
 
 import pytz
