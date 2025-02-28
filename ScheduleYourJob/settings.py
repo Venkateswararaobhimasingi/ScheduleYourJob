@@ -89,7 +89,7 @@ DATABASES = {
     }
 }
 '''
-DATABASES = {
+'''DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'koyebdb',
@@ -98,6 +98,16 @@ DATABASES = {
         'HOST': 'ep-cold-recipe-a29q036s.eu-central-1.pg.koyeb.app',
         'OPTIONS': {'sslmode': 'require'},
     }
+}'''
+
+import dj_database_url
+
+DATABASES = {
+    "default": dj_database_url.parse(
+        "postgresql://postgres:jQNiWAUwKAFcgsemTJUOrxVJyqFwnBUL@switchyard.proxy.rlwy.net:58384/railway",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Password validation
