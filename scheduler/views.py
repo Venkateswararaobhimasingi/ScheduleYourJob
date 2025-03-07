@@ -81,8 +81,8 @@ def custom_login(request):
 
         if user is not None:
             login(request, user)
-            next_url = request.GET.get("next", "dashboard")  # Redirect to 'next' URL or dashboard
-            return redirect(next_url)
+              # Redirect to 'next' URL or dashboard
+            return redirect("dashboard")
         else:
             messages.error(request, "Invalid username or password")
 
