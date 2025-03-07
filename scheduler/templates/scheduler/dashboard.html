@@ -5,52 +5,53 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <title>Scheduled Jobs Dashboard</title>
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-gray-100 p-4 sm:p-6">
 
     <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
-        <h1 class="text-2xl font-bold mb-4">Scheduled Jobs</h1>
-        <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded">Logout</a>
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">Scheduled Jobs</h1>
+            <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded">Logout</a>
+        </div>
 
         <!-- Create Job Button -->
         <a href="{% url 'create_job' %}" class="bg-blue-500 text-white px-4 py-2 rounded mb-4 inline-block">Create Job</a>
 
         {% if jobs %}
-        <table class="w-full border-collapse border border-gray-300 mt-4">
-            <thead>
-                <tr class="bg-gray-200">
-                    <th class="border p-2">ID</th>
-                    <th class="border p-2">URL</th>
-                    <th class="border p-2">Method</th>
-                    <th class="border p-2">Cron</th>
-                    <th class="border p-2">History</th>
-                    <th class="border p-2">Delete</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for job in jobs %}
-                <tr class="text-center">
-                    <td class="border p-2">{{ job.id }}</td>
-                    <td class="border p-2">{{ job.url }}</td>
-                    <td class="border p-2">{{ job.method }}</td>
-                    <td class="border p-2">{{ job.cron_expression }}</td>
-                    <td class="border p-2">
-                        <form method="POST" action="{% url 'job_history' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded" name="id" value="{{ job.id }}">History</button>
-                        </form>
-                        
-                    </td>
-                    <td class="border p-2">
-                        <form method="POST" action="{% url 'delete_job' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded" name="id" value="{{ job.id }}">Delete</button>
-                        </form>
-                       
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-gray-300 mt-4 text-sm sm:text-base">
+                <thead>
+                    <tr class="bg-gray-200 text-left">
+                        <th class="border p-2">ID</th>
+                        <th class="border p-2">URL</th>
+                        <th class="border p-2">Method</th>
+                        <th class="border p-2">Cron</th>
+                        <th class="border p-2 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr class="text-left border-b">
+                        <td class="border p-2">{{ job.id }}</td>
+                        <td class="border p-2 break-all">{{ job.url }}</td>
+                        <td class="border p-2">{{ job.method }}</td>
+                        <td class="border p-2">{{ job.cron_expression }}</td>
+                        <td class="border p-2">
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                <form method="POST" action="{% url 'job_history' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded" name="id" value="{{ job.id }}">History</button>
+                                </form>
+                                <form method="POST" action="{% url 'delete_job' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded" name="id" value="{{ job.id }}">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="text-center text-gray-500 mt-4">No scheduled jobs found.</p>
         {% endif %}
