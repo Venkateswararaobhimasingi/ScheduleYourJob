@@ -101,15 +101,22 @@ DATABASES = {
 }'''
 
 import dj_database_url
-
-DATABASES = {
+#DATABASE_URL='postgresql://neondb_owner:npg_NH9tX5ouapbj@ep-purple-cell-ab41orcu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require'
+'''DATABASES = {
     "default": dj_database_url.parse(
         "postgresql://postgres:jQNiWAUwKAFcgsemTJUOrxVJyqFwnBUL@switchyard.proxy.rlwy.net:58384/railway",
         conn_max_age=600,
         ssl_require=True
     )
-}
+}'''
 
+DATABASES = {
+    "default": dj_database_url.parse(
+        "postgresql://neondb_owner:npg_NH9tX5ouapbj@ep-purple-cell-ab41orcu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require",
+        conn_max_age=600,
+        ssl_require=True
+    )
+}
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

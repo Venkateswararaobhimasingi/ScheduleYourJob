@@ -46,13 +46,30 @@ def delete_job(request):
 
 
 from django.http import JsonResponse
-from datetime import datetime
+from django.utils.timezone import now
 import pytz
+from datetime import datetime
+from .models import ScheduledJob, JobExecutionHistory
+
 def sample_function(request):
     ist = pytz.timezone("Asia/Kolkata")
     print(datetime.now(ist))
     print("✅ Scheduled job executed successfully!")
+
+    # Fetch all scheduled jobs
+    scheduled_jobs = ScheduledJob.objects.all()
+
+    for job in scheduled_jobs:
+        # Get execution history for the job
+        history_records = JobExecutionHistory.objects.filter(job=job).order_by('-id')
+
+        if history_records.count() > 100:
+            # Get the last 100 records to delete
+            records_to_delete = history_records[100:]
+            records_to_delete.delete()  # Delete oldest 100 execution history records
+
     return JsonResponse({"message": "Job executed", "status": "success"})
+
 
 
 from django.shortcuts import render, get_object_or_404
