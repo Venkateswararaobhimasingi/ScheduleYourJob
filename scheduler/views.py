@@ -64,11 +64,14 @@ def sample_function(request):
         history_records = JobExecutionHistory.objects.filter(job=job).order_by('-id')
 
         if history_records.count() > 100:
-            # Get the last 100 records to delete
-            records_to_delete = history_records[100:]
-            records_to_delete.delete()  # Delete oldest 100 execution history records
+            # Find the oldest records by getting the IDs beyond the latest 100
+            oldest_ids = history_records.values_list('id', flat=True)[100:]
+            
+            # Delete records with those IDs
+            JobExecutionHistory.objects.filter(id__in=oldest_ids).delete()
 
     return JsonResponse({"message": "Job executed", "status": "success"})
+
 
 
 
