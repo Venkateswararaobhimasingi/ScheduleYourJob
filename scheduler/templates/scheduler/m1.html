@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show My Location (Leaflet)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <style>
+        #map { width: 100%; height: 600px; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h2>My Current Location</h2>
+    <p>Allow location access to see your current location on the map.</p>
+    <div id="map"></div>
+
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([20.5937, 78.9629], 5); // Default: India center
+
+        // Add OpenStreetMap Tile Layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to show the user's location
+        function showCurrentLocation(position) {
+            var userLat = position.coords.latitude;
+            var userLon = position.coords.longitude;
+            var accuracy = position.coords.accuracy;
+
+            console.log("Current Location:");
+            console.log("Latitude: " + userLat);
+            console.log("Longitude: " + userLon);
+            console.log("Accuracy: " + accuracy + " meters");
+
+            // Add marker for user's location
+            var userMarker = L.marker([userLat, userLon]).addTo(map)
+                .bindPopup("📍 You are here!<br>Accuracy: " + accuracy.toFixed(2) + "m")
+                .openPopup();
+
+            // Add accuracy circle
+            var accuracyCircle = L.circle([userLat, userLon], {
+                color: 'blue',
+                fillColor: '#add8e6',
+                fillOpacity: 0.3,
+                radius: accuracy
+            }).addTo(map);
+
+            // Move map to user's location
+            map.setView([userLat, userLon], 14);
+        }
+
+        // Handle location errors
+        function handleLocationError(error) {
+            let errorMsg = "Unable to retrieve location.";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = "Location access was denied. Please enable it in browser settings.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = "Location request timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMsg = "An unknown error occurred.";
+                    break;
+            }
+            console.error("Error getting location:", error.message);
+            alert(errorMsg);
+        }
+
+        // Get the current location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showCurrentLocation, handleLocationError);
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    </script>
+
+</body>
+</html>

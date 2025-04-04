@@ -114,3 +114,12 @@ def calls(job):
     else :
         response = requests.post(job.url, data={})
     return response
+
+
+
+def m1(request):
+    return render(request, "scheduler/m1.html")
+def m2(request):
+    return render(request, "scheduler/m2.html")
+def m3(request):
+    return render(request, "scheduler/m3.html")
