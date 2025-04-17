@@ -123,7 +123,7 @@ from datetime import datetime
 
 @csrf_exempt
 def recreate_all_jobs(request):
-    if request.method != 'POST':
+    if request.method != 'GET':
         return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)
 
     # Step 1: Backup existing jobs in memory
