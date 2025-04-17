@@ -115,6 +115,89 @@ def calls(job):
         response = requests.post(job.url, data={})
     return response
 
+from django.http import JsonResponse
+from .models import ScheduledJob
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import make_aware
+from datetime import datetime
+
+@csrf_exempt
+def recreate_all_jobs(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)
+
+    # Step 1: Backup existing jobs in memory
+    jobs_backup = list(ScheduledJob.objects.all().values())
+
+    # Step 2: Delete all existing jobs
+    ScheduledJob.objects.all().delete()
+
+    # Step 3: Recreate each job
+    recreated_jobs = []
+    for job_data in jobs_backup:
+        # Remove ID and created_at as they'll be auto-generated
+        job_data.pop('id', None)
+        job_data.pop('created_at', None)
+
+        # Convert datetime fields to aware datetime if present
+        for field in ['last_executed_at', 'next_run_at']:
+            if job_data[field] and not job_data[field].tzinfo:
+                job_data[field] = make_aware(job_data[field])
+
+        new_job = ScheduledJob.objects.create(**job_data)
+        recreated_jobs.append({
+            'id': new_job.id,
+            'url': new_job.url,
+            'method': new_job.method,
+            'cron_expression': new_job.cron_expression,
+            'interval_minutes': new_job.interval_minutes,
+            'last_executed_at': new_job.last_executed_at,
+            'next_run_at': new_job.next_run_at,
+            'created_at': new_job.created_at,
+        })
+
+    # Step 4: Return response
+    return JsonResponse({
+        'message': 'All jobs successfully recreated.',
+        'recreated_jobs': recreated_jobs
+    }, status=200)
+
+
+import requests
+from django.shortcuts import render
+import geocoder
+
+
+def get_location_by_ip(request):
+
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR'))
+    if ip and ',' in ip:
+        ip = ip.split(',')[0]
+
+    try:
+        response = requests.get(f"https://ipinfo.io/{ip}/json")
+        response1 = requests.get("https://ipinfo.io/json")
+        d=response1.json()
+        data = response.json()
+        g = geocoder.ip('me')
+        print(g.latlng)
+        print(g)
+        print(data)
+        loc = data.get("loc", "0,0")  # fallback
+        latitude, longitude = map(float, loc.split(','))
+    except Exception:
+        latitude, longitude = 0.0, 0.0
+
+    context = {
+        'latitude': latitude,
+        'longitude': longitude,
+        'data': data,
+        'data1':d,
+        'g':g.latlng,
+    }
+
+    return render(request, 'scheduler/cloc.html', context)
+
 
 
 def m1(request):
@@ -123,3 +206,4 @@ def m2(request):
     return render(request, "scheduler/m2.html")
 def m3(request):
     return render(request, "scheduler/m3.html")
+

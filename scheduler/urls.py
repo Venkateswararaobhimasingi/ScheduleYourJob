@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import dashboard, create_job, delete_job,sample_function,job_history,custom_logout,custom_login,m1,m2,m3
+from .views import dashboard, create_job, delete_job,sample_function,job_history,custom_logout,custom_login,m1,m2,m3,recreate_all_jobs,get_location_by_ip
 from django.contrib.auth.views import LoginView, LogoutView
 
 urlpatterns = [
@@ -13,4 +13,7 @@ urlpatterns = [
     path("m1/", m1, name="m1"),
     path("m2/", m2, name="m2"), 
     path("m3/", m3, name="m3"),
+    path('rjob/',recreate_all_jobs,name="rjob"),
+    path('cloc',get_location_by_ip,name="cloc"),
+
 ]
