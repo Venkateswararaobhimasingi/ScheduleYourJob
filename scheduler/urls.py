@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import dashboard, create_job, delete_job,sample_function,job_history,custom_logout,custom_login,m1,m2,m3,recreate_all_jobs,get_location_by_ip
 from django.contrib.auth.views import LoginView, LogoutView
+from . import views
 
 urlpatterns = [
     path("", dashboard, name="dashboard"),
@@ -15,5 +16,7 @@ urlpatterns = [
     path("m3/", m3, name="m3"),
     path('rjob/',recreate_all_jobs,name="rjob"),
     path('cloc',get_location_by_ip,name="cloc"),
+    path('classify-email/', views.classify_email),
+
 
 ]

@@ -207,3 +207,61 @@ def m2(request):
 def m3(request):
     return render(request, "scheduler/m3.html")
 
+import os
+import numpy as np
+import json
+import tensorflow as tf
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import tokenizer_from_json
+
+# Load once at the top level
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model_path = os.path.join(BASE_DIR, 'email_priority_model.tflite')
+tokenizer_path = os.path.join(BASE_DIR, 'tokenizer.json')
+labels_path = os.path.join(BASE_DIR, 'label_classes.json')
+
+# Load tokenizer
+with open(tokenizer_path, 'r') as f:
+    tokenizer = tokenizer_from_json(f.read())
+
+# Load labels
+with open(labels_path, 'r') as f:
+    label_classes = json.load(f)
+
+# Load model
+interpreter = tf.lite.Interpreter(model_path=model_path)
+interpreter.allocate_tensors()
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+max_len = input_details[0]['shape'][1]
+
+@csrf_exempt
+def classify_email(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            text = data.get('email', '')
+
+            sequence = tokenizer.texts_to_sequences([text])
+            padded = pad_sequences(sequence, maxlen=max_len)
+            input_data = np.array(padded, dtype=np.float32)
+
+            interpreter.set_tensor(input_details[0]['index'], input_data)
+            interpreter.invoke()
+            output_data = interpreter.get_tensor(output_details[0]['index'])
+
+            predicted_index = int(np.argmax(output_data))
+            predicted_label = label_classes[predicted_index]
+
+            return JsonResponse({
+                'email': text,
+                'predicted_label': predicted_label,
+                'scores': output_data.tolist()
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
