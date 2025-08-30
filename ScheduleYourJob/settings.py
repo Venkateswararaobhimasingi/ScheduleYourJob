@@ -109,14 +109,27 @@ import dj_database_url
         ssl_require=True
     )
 }'''
-
+'''
 DATABASES = {
     "default": dj_database_url.parse(
         "postgresql://neondb_owner:npg_NH9tX5ouapbj@ep-purple-cell-ab41orcu-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require",
         conn_max_age=600,
         ssl_require=True
     )
+}'''
+# settings.py
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',   # PostgreSQL backend
+        'NAME': 'postgres',                         # dbname
+        'USER': 'postgres.zmhgqxyinhzzuuckxttm',    # your Supabase user
+        'PASSWORD': 'Venkatesh@1430',                # replace with your password
+        'HOST': 'aws-1-ap-south-1.pooler.supabase.com',
+        'PORT': '6543',
+    }
 }
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
