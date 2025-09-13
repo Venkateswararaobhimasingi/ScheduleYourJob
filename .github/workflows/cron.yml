@@ -2,7 +2,8 @@ name: Run Cron Job
 
 on:
   schedule:
-    - cron: "*/1 * * * *"  # Runs every 1 minute
+    # Run every 1 minute
+    - cron: "*/1 * * * *"
 
 jobs:
   trigger-cron:
@@ -10,4 +11,5 @@ jobs:
     steps:
       - name: Call Django Cron Endpoint
         run: |
-          curl -X POST "https://scheduleyourjob.vercel.app/run-scheduled-jobs/"
+          curl -X POST "https://scheduleyourjob.vercel.app/run-scheduled-jobs/" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
