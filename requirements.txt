@@ -16,3 +16,4 @@ whitenoise
 geocoder
 psycopg2-binary==2.9.10
 djangorestframework
+tensorflow
