@@ -299,12 +299,7 @@ def run_cron_job(request):
     - Run all scheduled jobs due at this moment
     """
 
-    # ✅ 1. Verify the secret token from Authorization header
-    auth_header = request.headers.get('Authorization')
-    expected_secret = f"Bearer {os.environ.get('CRON_SECRET')}"
-
-    if auth_header != expected_secret:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+   
 
     # ✅ 2. Current time in IST
     current_time = now().astimezone(pytz.timezone("Asia/Kolkata"))
