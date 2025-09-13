@@ -16,8 +16,7 @@ urlpatterns = [
     path("m3/", m3, name="m3"),
     path('rjob/',recreate_all_jobs,name="rjob"),
     path('cloc',get_location_by_ip,name="cloc"),
-    #path('classify-email/', views.classify_email),
-    path('run-scheduled-jobs/', views.run_scheduled_jobs_view, name='run_scheduled_jobs'),
+    path('classify-email/', views.classify_email),
 
 
 ]
