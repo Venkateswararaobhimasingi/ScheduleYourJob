@@ -207,7 +207,7 @@ def m2(request):
 def m3(request):
     return render(request, "scheduler/m3.html")
 
-import os
+'''import os
 import numpy as np
 import json
 import tensorflow as tf
@@ -276,4 +276,85 @@ def classify_email(request):
         })
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)'''
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now
+from django.db import transaction
+from datetime import datetime
+from croniter import croniter
+from .models import ScheduledJob, JobExecutionHistory
+import requests
+import pytz
+import os
+
+@csrf_exempt
+def run_scheduled_jobs_view(request):
+    # ✅ Validate secret to secure the endpoint
+    incoming_secret = request.headers.get("Authorization")
+    expected_secret = f"Bearer {os.environ.get('CRON_SECRET')}"
+    
+    if incoming_secret != expected_secret:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+
+    current_time = now().astimezone(pytz.timezone("Asia/Kolkata"))
+    jobs = ScheduledJob.objects.all()
+
+    executed_jobs = []
+
+    for job in jobs:
+        with transaction.atomic():
+            job = ScheduledJob.objects.select_for_update().get(id=job.id)
+
+            # If first run, initialize next_run_at
+            if not job.next_run_at:
+                cron = croniter(job.cron_expression, current_time)
+                job.next_run_at = cron.get_next(datetime)
+                job.last_executed_at = current_time
+                job.save()
+                continue
+
+            # Skip if already executed
+            if job.next_run_at is not None and JobExecutionHistory.objects.filter(
+                job=job, executed_at__gte=job.next_run_at, executed_at__lt=current_time
+            ).exists():
+                continue
+
+            if job.next_run_at <= current_time:
+                try:
+                    # Make the actual request
+                    if job.method == "GET":
+                        response = requests.get(job.url)
+                    else:
+                        response = requests.post(job.url, data={})
+
+                    # Update job
+                    cron = croniter(job.cron_expression, current_time)
+                    job.last_executed_at = current_time
+                    job.next_run_at = cron.get_next(datetime)
+                    job.save()
+
+                    # Log execution
+                    JobExecutionHistory.objects.create(
+                        job=job,
+                        executed_at=current_time,
+                        response_status=response.status_code,
+                        response_body=response.text[:500],
+                    )
+
+                    executed_jobs.append(job.url)
+
+                except Exception as e:
+                    JobExecutionHistory.objects.create(
+                        job=job,
+                        executed_at=current_time,
+                        response_status=500,
+                        response_body=str(e),
+                    )
+
+    return JsonResponse({
+        "success": True,
+        "executed_jobs": executed_jobs
+    })
