@@ -207,7 +207,7 @@ def m2(request):
 def m3(request):
     return render(request, "scheduler/m3.html")
 
-import os
+'''import os
 import numpy as np
 import json
 import tensorflow as tf
@@ -276,4 +276,111 @@ def classify_email(request):
         })
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)'''
+
+import os
+import pytz
+import requests
+from datetime import datetime
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now
+from django.db import transaction
+from croniter import croniter
+from .models import ScheduledJob, JobExecutionHistory
+
+
+@csrf_exempt
+def run_cron_job(request):
+    """
+    Endpoint to trigger cron jobs externally (e.g., from GitHub Actions).
+    This will:
+    - Verify the CRON_SECRET for security
+    - Run all scheduled jobs due at this moment
+    """
+
+    # ✅ 1. Verify the secret token from Authorization header
+    auth_header = request.headers.get('Authorization')
+    expected_secret = f"Bearer {os.environ.get('CRON_SECRET')}"
+
+    if auth_header != expected_secret:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+
+    # ✅ 2. Current time in IST
+    current_time = now().astimezone(pytz.timezone("Asia/Kolkata"))
+
+    # ✅ 3. Fetch all jobs
+    jobs = ScheduledJob.objects.all()
+    executed_jobs = []
+
+    for job in jobs:
+        with transaction.atomic():
+            # Lock the row to avoid duplicate processing
+            job = ScheduledJob.objects.select_for_update().get(id=job.id)
+
+            # If job has no next_run_at, initialize it
+            if not job.next_run_at:
+                cron = croniter(job.cron_expression, current_time)
+                job.next_run_at = cron.get_next(datetime)
+                job.last_executed_at = current_time
+                job.save()
+                continue
+
+            # Skip if already executed between last run and now
+            if JobExecutionHistory.objects.filter(
+                job=job,
+                executed_at__gte=job.next_run_at,
+                executed_at__lt=current_time
+            ).exists():
+                continue
+
+            # If it's time to run
+            if job.next_run_at <= current_time:
+                try:
+                    # Make the request to the job URL
+                    if job.method == "GET":
+                        response = requests.get(job.url)
+                    else:
+                        response = requests.post(job.url, data={})
+
+                    # Update job's schedule
+                    job.last_executed_at = current_time
+                    cron = croniter(job.cron_expression, current_time)
+                    job.next_run_at = cron.get_next(datetime)
+                    job.save()
+
+                    # Log execution
+                    JobExecutionHistory.objects.create(
+                        job=job,
+                        executed_at=current_time,
+                        response_status=response.status_code,
+                        response_body=response.text[:500],  # Store first 500 chars
+                    )
+
+                    executed_jobs.append({
+                        "job_id": job.id,
+                        "url": job.url,
+                        "status": response.status_code
+                    })
+
+                except Exception as e:
+                    # Log error
+                    JobExecutionHistory.objects.create(
+                        job=job,
+                        executed_at=current_time,
+                        response_status=500,
+                        response_body=str(e),
+                    )
+                    executed_jobs.append({
+                        "job_id": job.id,
+                        "url": job.url,
+                        "status": "error",
+                        "error": str(e)
+                    })
+
+    # ✅ 4. Return a JSON response
+    return JsonResponse({
+        "message": "Cron jobs executed successfully",
+        "time": str(current_time),
+        "executed_jobs": executed_jobs
+    })
