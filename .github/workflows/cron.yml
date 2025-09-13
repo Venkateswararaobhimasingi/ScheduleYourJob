@@ -2,12 +2,19 @@ name: Run Cron Job
 
 on:
   schedule:
-    - cron: "*/1 * * * *"  # Runs every 1 minute
+    - cron: "*/1 * * * *"
+  workflow_dispatch:
 
 jobs:
   trigger-cron:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug info
+        run: |
+          echo "Workflow is running"
+          date
       - name: Call Django Cron Endpoint
         run: |
-          curl -X POST "https://scheduleyourjob.vercel.app/run-scheduled-jobs/"
+          curl -X POST "https://scheduleyourjob.vercel.app/run-scheduled-jobs/" \
+          -H "Content-Type: application/json" \
+          -d '{"trigger":"github-actions"}'
