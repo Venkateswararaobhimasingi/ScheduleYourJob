@@ -3,7 +3,7 @@ name: Run Cron Job
 on:
   schedule:
     # Run every 1 minute
-    - cron: "*/1 * * * *"
+    - cron: "*/5 * * * *"
 
 jobs:
   trigger-cron:
